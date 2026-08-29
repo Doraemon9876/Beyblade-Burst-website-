@@ -138,7 +138,7 @@ async def episode_info(ep: int):
 
 
 # ============================================================
-# FIXED VIDEO STREAM (HTTP RANGE SEEKING ENABLED)
+# OPTIMIZED VIDEO STREAMING (FAST SEEKING ENABLED)
 # ============================================================
 
 @app.get("/api/video/{ep}")
@@ -151,7 +151,6 @@ async def video(ep: int, request: Request):
     file_size = msg.file.size
     range_header = request.headers.get("range")
 
-    # Default to fetching starting from 0 if no range header
     start = 0
     end = file_size - 1
 
@@ -162,20 +161,21 @@ async def video(ep: int, request: Request):
             if match.group(2):
                 end = int(match.group(2))
 
-    # Ensure range bounds are valid
     if start >= file_size:
         raise HTTPException(416, "Requested Range Not Satisfiable")
 
-    end = min(end, file_size - 1)
+    # Serve small 5MB chunks to enable quick browser skipping
+    max_chunk = 5 * 1024 * 1024
+    end = min(end if (range_header and match and match.group(2)) else start + max_chunk - 1, file_size - 1)
     content_length = end - start + 1
 
     async def stream_telegram_chunks():
         try:
-            # Download directly from offset byte location without FFmpeg piping
+            # 1MB chunk size reduces round-trip API calls to Telegram
             async for chunk in client.iter_download(
                 msg.media,
                 offset=start,
-                request_size=1024 * 512,
+                request_size=1024 * 1024,
                 limit=content_length
             ):
                 yield chunk
@@ -187,14 +187,13 @@ async def video(ep: int, request: Request):
         "Accept-Ranges": "bytes",
         "Content-Length": str(content_length),
         "Content-Type": msg.file.mime_type or "video/mp4",
-        "Cache-Control": "no-cache",
+        "Cache-Control": "public, max-age=3600",
     }
 
     duration = get_video_duration(msg)
     if duration:
         headers["X-Video-Duration"] = str(duration)
 
-    # Return 206 Partial Content so browser knows seeking worked!
     return StreamingResponse(
         stream_telegram_chunks(),
         status_code=206 if range_header else 200,
