@@ -127,11 +127,10 @@ async function playEpisode(ep, autoplay = false) {
 
 
         /*
-         * Add the new Telegram bridge URL.
+         * Clean video URL (Allows byte-range seeking & caching)
          */
 
-        const videoUrl =
-            `/api/video/${ep}?v=${Date.now()}`;
+        const videoUrl = `/api/video/${ep}`;
 
         video.src = videoUrl;
 
@@ -469,14 +468,6 @@ searchBox.addEventListener(
 ----------------------------------- */
 
 createEpisodeList();
-
-
-/*
- * Don't automatically start downloading
- * Episode 1 when the page opens.
- *
- * The user can press Continue.
- */
 
 const savedEpisode =
     Number(
