@@ -38,15 +38,16 @@ client = TelegramClient(
 
 
 # ============================================================
-# FRONTEND DIRECTORY SEARCH
+# FRONTEND DIRECTORY FINDER
 # ============================================================
 
-# Search both same directory and parent directory to work on all cloud hosts
 CURRENT_DIR = Path(__file__).resolve().parent
-FRONTEND_DIR = CURRENT_DIR / "frontend"
+
+# Check all possible locations where frontend folder might be located
+FRONTEND_DIR = CURRENT_DIR.parent / "frontend"
 
 if not FRONTEND_DIR.exists():
-    FRONTEND_DIR = CURRENT_DIR.parent / "frontend"
+    FRONTEND_DIR = CURRENT_DIR / "frontend"
 
 if FRONTEND_DIR.exists():
     app.mount("/static", StaticFiles(directory=str(FRONTEND_DIR)), name="static")
@@ -58,7 +59,7 @@ async def homepage():
     if not index_file.exists():
         return {
             "status": "online",
-            "message": "Backend is running, but frontend/index.html was not found."
+            "message": f"Backend is running, but index.html was not found at {index_file}"
         }
     return FileResponse(str(index_file), media_type="text/html")
 
