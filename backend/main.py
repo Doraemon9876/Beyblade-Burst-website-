@@ -38,10 +38,15 @@ client = TelegramClient(
 
 
 # ============================================================
-# FRONTEND
+# FRONTEND DIRECTORY SEARCH
 # ============================================================
 
-FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
+# Search both same directory and parent directory to work on all cloud hosts
+CURRENT_DIR = Path(__file__).resolve().parent
+FRONTEND_DIR = CURRENT_DIR / "frontend"
+
+if not FRONTEND_DIR.exists():
+    FRONTEND_DIR = CURRENT_DIR.parent / "frontend"
 
 if FRONTEND_DIR.exists():
     app.mount("/static", StaticFiles(directory=str(FRONTEND_DIR)), name="static")
