@@ -43,11 +43,11 @@ client = TelegramClient(
 
 CURRENT_DIR = Path(__file__).resolve().parent
 
-# Check all possible locations where frontend folder might be located
-FRONTEND_DIR = CURRENT_DIR.parent / "frontend"
+# Check inside backend folder first (for Koyeb deployment structure)
+FRONTEND_DIR = CURRENT_DIR / "frontend"
 
 if not FRONTEND_DIR.exists():
-    FRONTEND_DIR = CURRENT_DIR / "frontend"
+    FRONTEND_DIR = CURRENT_DIR.parent / "frontend"
 
 if FRONTEND_DIR.exists():
     app.mount("/static", StaticFiles(directory=str(FRONTEND_DIR)), name="static")
@@ -144,7 +144,7 @@ async def episode_info(ep: int):
 
 
 # ============================================================
-# OPTIMIZED VIDEO STREAMING (FAST SEEKING ENABLED)
+# OPTIMIZED VIDEO STREAMING (FAST SEEKING & 2MB CHUNKS)
 # ============================================================
 
 @app.get("/api/video/{ep}")
@@ -177,11 +177,11 @@ async def video(ep: int, request: Request):
 
     async def stream_telegram_chunks():
         try:
-            # 1MB chunk size reduces round-trip API calls to Telegram
+            # Optimized 2MB chunk size balances immediate playback with fewer network calls
             async for chunk in client.iter_download(
                 msg.media,
                 offset=start,
-                request_size=1024 * 1024,
+                request_size=2048 * 1024,
                 limit=content_length
             ):
                 yield chunk
